@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model & Training Metrics — OralScan AI</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="pulse-dot"></span>
+        <span>OralScan AI</span>
+        <span class="nav-brand-badge">Research prototype</span>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="/" class="nav-link">Home</a></li>
+          <li><a href="/screening" class="nav-link">Screening</a></li>
+          <li><a href="/model-training" class="nav-link active">Model & Training</a></li>
+          <li><a href="/about" class="nav-link">About</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-status-badge">
+        <span class="pulse-dot"></span>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h1 class="page-title">Model & Training Performance</h1>
+      <p class="page-subtitle">
+        Transparent validation metrics, patient-grouped split validation, loss curves, and confusion matrix
+        for the fine-tuned ViT-B/16 oral pre-cancer screening model.
+      </p>
+    </div>
+
+    <!-- Faculty Rule Notice -->
+    <div class="alert-box alert-info" style="margin-bottom: 2rem;">
+      <div class="alert-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+      <p class="alert-desc">
+        All image inference and explainability heatmaps (Grad-CAM, Attention Rollout, LIME)
+        are computed <strong>locally on-device</strong> using the fine-tuned ViT-B/16 checkpoint.
+        Zero third-party AI APIs (no OpenAI, Gemini, or Hugging Face Inference endpoints) are used — all processing stays entirely on your local machine.
+      </p>
+    </div>
+
+    {% if not metrics %}
+    <!-- Missing Metrics State -->
+    <div class="alert-box alert-warning">
+      <div class="alert-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>metrics not available</span>
+      </div>
+      <p class="alert-desc">
+        The training metrics file (<code>training/metrics.json</code>) could not be loaded or is missing.
+        Please place <code>metrics.json</code> in the <code>training/</code> folder to view training curves, split statistics, and validation scores.
+      </p>
+    </div>
+    {% else %}
+
+    <!-- ── Top KPI Grid ─────────────────────────────────────────────────── -->
+    <section class="kpi-grid">
+      <div class="kpi-card accent-cyan">
+        <span class="kpi-label">Macro F1 Score</span>
+        <span class="kpi-value">{{ "%.2f"|format(metrics.evaluation.macro_f1) }}%</span>
+        <span class="kpi-subtext">Model: <strong>71.22%</strong> vs. All-Normal Baseline: <strong>{{ "%.2f"|format(metrics.evaluation.baseline_all_normal.macro_f1) }}%</strong></span>
+      </div>
+
+      <div class="kpi-card accent-green">
+        <span class="kpi-label">Balanced Accuracy</span>
+        <span class="kpi-value">{{ "%.2f"|format(metrics.evaluation.balanced_accuracy) }}%</span>
+        <span class="kpi-subtext">Mean recall across all 4 tiers</span>
+      </div>
+
+      <div class="kpi-card accent-yellow">
+        <span class="kpi-label">Overall Accuracy</span>
+        <span class="kpi-value">{{ "%.2f"|format(metrics.evaluation.accuracy) }}%</span>
+        <span class="kpi-subtext">Model: <strong>93.59%</strong> vs. All-Normal Baseline: <strong>{{ "%.2f"|format(metrics.evaluation.baseline_all_normal.accuracy) }}%</strong></span>
+      </div>
+
+      <div class="kpi-card accent-orange">
+        <span class="kpi-label">Referral Sensitivity (T2/T3)</span>
+        <span class="kpi-value">{{ "%.1f"|format(metrics.evaluation.referral_T2_or_T3.sensitivity) }}%</span>
+        <span class="kpi-subtext">95% CI: {{ metrics.evaluation.referral_T2_or_T3.sensitivity_95ci[0] }}% – {{ metrics.evaluation.referral_T2_or_T3.sensitivity_95ci[1] }}% (n={{ metrics.evaluation.referral_T2_or_T3.n }})</span>
+      </div>
+
+      <div class="kpi-card accent-red">
+        <span class="kpi-label">Referral Specificity</span>
+        <span class="kpi-value">{{ "%.1f"|format(metrics.evaluation.referral_T2_or_T3.specificity) }}%</span>
+        <span class="kpi-subtext">Minimizes healthy recall burden</span>
+      </div>
+    </section>
+
+    <!-- ── Section 1: Dataset & Model Architecture ──────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Dataset & Backbone Specifications</span>
+        </h2>
+        <span class="section-tag">{{ metrics.dataset.name }}</span>
+      </div>
+
+      <div class="two-col-grid">
+        <div class="details-list">
+          <div class="detail-item">
+            <div class="detail-key">Model Name</div>
+            <div class="detail-val">{{ metrics.model.name }} ({{ metrics.model.file }})</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Architecture Backbone</div>
+            <div class="detail-val">{{ metrics.model.backbone }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Parameter Count</div>
+            <div class="detail-val">{{ metrics.model.parameters_millions }} Million parameters</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Input Specification</div>
+            <div class="detail-val">{{ metrics.model.input }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Training Hardware & Env</div>
+            <div class="detail-val">{{ metrics.model.hardware }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Provenance</div>
+            <div class="detail-val">{{ metrics.model.trained_by }}</div>
+          </div>
+        </div>
+
+        <div class="details-list">
+          <div class="detail-item">
+            <div class="detail-key">Dataset Cohort</div>
+            <div class="detail-val">{{ metrics.dataset.images }} smartphone images across {{ metrics.dataset.subjects }} subjects</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Class Distribution</div>
+            <div class="detail-val">
+              T0: {{ metrics.dataset.class_counts['T0 Normal'] }} |
+              T1: {{ metrics.dataset.class_counts['T1 Variation from normal'] }} |
+              T2: {{ metrics.dataset.class_counts['T2 OPMD'] }} |
+              T3: {{ metrics.dataset.class_counts['T3 Oral cancer'] }}
+            </div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Imbalance Characteristic</div>
+            <div class="detail-val">{{ metrics.dataset.imbalance_note }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Loss Weighting (Inverse-Freq)</div>
+            <div class="detail-val">
+              T0: {{ "%.4f"|format(metrics.training.class_weights.T0) }},
+              T1: {{ "%.4f"|format(metrics.training.class_weights.T1) }},
+              T2: {{ "%.4f"|format(metrics.training.class_weights.T2) }},
+              T3: {{ "%.4f"|format(metrics.training.class_weights.T3) }}
+            </div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Optimizer & Schedule</div>
+            <div class="detail-val">{{ metrics.training.optimizer }}; {{ metrics.training.schedule }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-key">Checkpoint Selection</div>
+            <div class="detail-val">{{ metrics.training.checkpoint_selection }} (Epoch {{ metrics.training.best_epoch }} saved)</div>
+          </div>
+          <div class="detail-item" style="grid-column: 1 / -1; background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.25);">
+            <div class="detail-key" style="color: var(--brand-cyan);">All-Normal Baseline Comparison</div>
+            <div class="detail-val" style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; margin-top: 0.35rem;">
+              <span><strong>Trained ViT Model:</strong> Accuracy <span style="color: #fff; font-family: var(--font-mono); font-weight: 700;">{{ "%.2f"|format(metrics.evaluation.accuracy) }}%</span> | Macro-F1 <span style="color: var(--brand-cyan); font-family: var(--font-mono); font-weight: 700;">{{ "%.2f"|format(metrics.evaluation.macro_f1) }}%</span></span>
+              <span><strong>All-Normal Baseline:</strong> Accuracy <span style="color: #9ca3af; font-family: var(--font-mono); font-weight: 700;">{{ "%.2f"|format(metrics.evaluation.baseline_all_normal.accuracy) }}%</span> | Macro-F1 <span style="color: #9ca3af; font-family: var(--font-mono); font-weight: 700;">{{ "%.2f"|format(metrics.evaluation.baseline_all_normal.macro_f1) }}%</span> ({{ metrics.evaluation.baseline_all_normal.note }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 2: Patient-Wise Split (Leakage Prevention) ─────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Patient-Wise Partitioning (Zero Patient Leakage)</span>
+        </h2>
+        <span class="section-tag">{{ metrics.split.method }}</span>
+      </div>
+
+      <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
+        <strong>Partitioning Strategy:</strong> {{ metrics.split.grouping_key }}.
+        This strict grouping ensures no lesions or oral regions from the same individual appear in both training and evaluation subsets.
+      </p>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Partition</th>
+              <th class="num-cell">Total Images</th>
+              <th class="num-cell">T0 Normal</th>
+              <th class="num-cell">T1 Variation</th>
+              <th class="num-cell">T2 OPMD</th>
+              <th class="num-cell">T3 Oral Cancer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Train Partition</strong></td>
+              <td class="num-cell">{{ metrics.split.train_images }}</td>
+              <td class="num-cell">{{ metrics.split.train_counts.T0 }}</td>
+              <td class="num-cell">{{ metrics.split.train_counts.T1 }}</td>
+              <td class="num-cell">{{ metrics.split.train_counts.T2 }}</td>
+              <td class="num-cell">{{ metrics.split.train_counts.T3 }}</td>
+            </tr>
+            <tr>
+              <td><strong>Validation Partition (Fold 1)</strong></td>
+              <td class="num-cell" style="color: var(--brand-cyan); font-weight: 700;">{{ metrics.split.val_images }}</td>
+              <td class="num-cell">{{ metrics.split.val_counts.T0 }}</td>
+              <td class="num-cell">{{ metrics.split.val_counts.T1 }}</td>
+              <td class="num-cell">{{ metrics.split.val_counts.T2 }}</td>
+              <td class="num-cell">{{ metrics.split.val_counts.T3 }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Section 3: Confusion Matrix ─────────────────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+          <span>Validation Confusion Matrix</span>
+        </h2>
+        <span class="section-tag">{{ metrics.evaluation.set }}</span>
+      </div>
+
+      <div class="two-col-grid">
+        <!-- Interactive HTML Matrix -->
+        <div class="cm-container">
+          <div class="cm-matrix-wrapper">
+            <table class="cm-table">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="background: transparent; border: none;"></th>
+                  <th colspan="4" class="cm-header-pred" style="border-bottom: 1px solid var(--border-color); text-align: center;">Predicted Class</th>
+                </tr>
+                <tr>
+                  {% for label in metrics.evaluation.confusion_matrix.labels %}
+                  <th class="cm-header-pred">{{ label.split(' ')[0] }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% set rows = metrics.evaluation.confusion_matrix.rows_true_cols_pred %}
+                {% set labels = metrics.evaluation.confusion_matrix.labels %}
+                {% for r_idx in range(rows|length) %}
+                <tr>
+                  <th class="cm-header-true">{{ labels[r_idx] }}</th>
+                  {% for c_idx in range(rows[r_idx]|length) %}
+                    {% set val = rows[r_idx][c_idx] %}
+                    {% if r_idx == c_idx %}
+                      <td class="cm-cell diagonal">{{ val }}</td>
+                    {% elif r_idx == 2 and c_idx == 0 and val > 0 %}
+                      <!-- Critical miss: T2 predicted as T0 -->
+                      <td class="cm-cell critical-miss" title="Critical Miss: OPMD predicted as Normal">{{ val }}</td>
+                    {% elif val == 0 %}
+                      <td class="cm-cell zero">0</td>
+                    {% else %}
+                      <td class="cm-cell off-diag">{{ val }}</td>
+                    {% endif %}
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; width: 100%;">
+            <p><strong>Clinical Triage Analysis:</strong></p>
+            <ul style="padding-left: 1.25rem; margin-top: 0.4rem;">
+              <li><span style="color: #4ade80; font-weight: 600;">Oral Cancer (T3):</span> 4 out of 4 detected (100% recall, 0 critical misses).</li>
+              <li><span style="color: #fca5a5; font-weight: 600;">Critical Misses:</span> 2 of 4 T2 OPMD cases were classified as T0 Normal ({{ metrics.evaluation.critical_miss_rate.detail }}).</li>
+              <li><span style="color: #fcd34d; font-weight: 600;">T1 Variation:</span> 9 of 17 predicted as T0, reflecting visual similarity between benign variations and healthy oral mucosa.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Rendered Plot Image -->
+        {% if has_cm_png %}
+        <div class="chart-card">
+          <img src="/training/asset/confusion_matrix.png" alt="Normalized Confusion Matrix Plot">
+          <p class="chart-caption">Normalized & raw count confusion matrix generated during model training run.</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ── Section 4: Per-Class Precision, Recall, F1 ────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Per-Class Classification Metrics</span>
+        </h2>
+        <span class="section-tag">Validation Fold (n={{ metrics.evaluation.set.split('(')[1].split(' ')[0] if '(' in metrics.evaluation.set else '343' }})</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tier / Class</th>
+              <th class="num-cell">Precision</th>
+              <th class="num-cell">Recall (Sensitivity)</th>
+              <th class="num-cell">95% CI (Recall)</th>
+              <th class="num-cell">Specificity</th>
+              <th class="num-cell">F1-Score</th>
+              <th class="num-cell">Support (N)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in metrics.evaluation.per_class %}
+            <tr>
+              <td>
+                {% if 'T0' in item.class %}<span class="badge badge-t0">{{ item.class }}</span>
+                {% elif 'T1' in item.class %}<span class="badge badge-t1">{{ item.class }}</span>
+                {% elif 'T2' in item.class %}<span class="badge badge-t2">{{ item.class }}</span>
+                {% elif 'T3' in item.class %}<span class="badge badge-t3">{{ item.class }}</span>
+                {% else %}<strong>{{ item.class }}</strong>{% endif %}
+              </td>
+              <td class="num-cell">{{ "%.2f"|format(item.precision) }}%</td>
+              <td class="num-cell" style="font-weight: 700; color: #fff;">{{ "%.2f"|format(item.recall) }}%</td>
+              <td class="num-cell" style="color: var(--text-dim);">[{{ item.recall_95ci[0] }}% – {{ item.recall_95ci[1] }}%]</td>
+              <td class="num-cell">{{ "%.2f"|format(item.specificity) }}%</td>
+              <td class="num-cell" style="color: var(--brand-cyan);">{{ "%.2f"|format(item.f1) }}%</td>
+              <td class="num-cell">{{ item.support }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="background: rgba(255, 255, 255, 0.04); font-weight: 700;">
+              <td><strong>Macro Average</strong></td>
+              <td class="num-cell">{{ "%.2f"|format(metrics.evaluation.macro_precision) }}%</td>
+              <td class="num-cell">{{ "%.2f"|format(metrics.evaluation.balanced_accuracy) }}%</td>
+              <td class="num-cell" style="color: var(--text-dim);">—</td>
+              <td class="num-cell">—</td>
+              <td class="num-cell" style="color: var(--brand-cyan);">{{ "%.2f"|format(metrics.evaluation.macro_f1) }}%</td>
+              <td class="num-cell">{{ metrics.split.val_images }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Section 5: Training Curves & Epoch History ────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+          <span>Training Curves & Convergence History</span>
+        </h2>
+        <span class="section-tag">Best Checkpoint: Epoch {{ metrics.training.best_epoch }}</span>
+      </div>
+
+      <div class="two-col-grid">
+        {% if has_curves_png %}
+        <div class="chart-card">
+          <img src="/training/asset/training_curves.png" alt="Training & Validation Curves">
+          <p class="chart-caption">Validation loss, accuracy, and Macro-F1 across 29 training epochs (Kaggle T4 run).</p>
+        </div>
+        {% endif %}
+
+        <div>
+          <div class="details-list" style="margin-bottom: 1.25rem;">
+            <div class="detail-item">
+              <div class="detail-key">Epochs Run</div>
+              <div class="detail-val">{{ metrics.training.epochs_run }} / {{ metrics.training.epochs_max }} ({{ metrics.training.early_stopping }})</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-key">Best Checkpoint Selection</div>
+              <div class="detail-val">Epoch {{ metrics.training.best_epoch }} (Macro-F1 {{ "%.2f"|format(metrics.evaluation.macro_f1) }}%, Balanced Acc {{ "%.2f"|format(metrics.evaluation.balanced_accuracy) }}%)</div>
+            </div>
+          </div>
+
+          <div class="scroll-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Epoch</th>
+                  <th class="num-cell">Val Loss</th>
+                  <th class="num-cell">Accuracy</th>
+                  <th class="num-cell">Macro F1</th>
+                  <th class="num-cell">OPMD Rec.</th>
+                  <th class="num-cell">OC Rec.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ep in metrics.epoch_log %}
+                <tr {% if ep.epoch == metrics.training.best_epoch %}style="background: rgba(6, 182, 212, 0.15); font-weight: 700;"{% endif %}>
+                  <td>
+                    Epoch {{ ep.epoch }}
+                    {% if ep.epoch == metrics.training.best_epoch %}<span class="badge badge-t0" style="padding: 0.1rem 0.4rem; font-size: 0.65rem;">Best</span>{% endif %}
+                  </td>
+                  <td class="num-cell">{{ "%.4f"|format(ep.val_loss) }}</td>
+                  <td class="num-cell">{{ "%.2f"|format(ep.accuracy * 100) }}%</td>
+                  <td class="num-cell">{{ "%.2f"|format(ep.macro_f1 * 100) }}%</td>
+                  <td class="num-cell">{{ "%.0f"|format(ep.opmd_recall * 100) }}%</td>
+                  <td class="num-cell">{{ "%.0f"|format(ep.oc_recall * 100) }}%</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if metrics.epoch_log_note %}
+          <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.5rem; font-style: italic;">
+            Note: {{ metrics.epoch_log_note }}
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 6: Limitations & Clinical Caution ────────────────────── -->
+    <section class="section-card" style="border-color: rgba(245, 158, 11, 0.35);">
+      <div class="section-header">
+        <h2 class="section-title" style="color: #fcd34d;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Honest Clinical Limitations & Boundary Conditions</span>
+        </h2>
+        <span class="section-tag">Ethical & Transparent AI</span>
+      </div>
+
+      <ul style="color: var(--text-muted); line-height: 1.7; padding-left: 1.5rem;">
+        {% for lim in metrics.limitations %}
+        <li style="margin-bottom: 0.5rem;">{{ lim }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {% endif %}
+  </main>
+
+  <footer class="footer">
+    <p><strong>Highlighted regions influenced this prediction according to each method. Not proof of disease. Screening aid only.</strong></p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem;">
+      OralScan AI — Explainable AI for Oral Pre-Cancer and Cancer Screening Triage. Screening aid prototype for educational & research purposes. Not a medical diagnostic device.
+    </p>
+  </footer>
+
+</body>
+</html>

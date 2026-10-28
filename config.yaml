@@ -1,0 +1,57 @@
+## =====================================================================
+##  Oral Pre-Cancer Screening App — Configuration
+##  Edit this file to swap in a new model without touching any code.
+## =====================================================================
+
+model:
+  path: "models/best_4tier_vit.pth"
+  architecture: "vit_base_patch16_224"
+  num_classes: 4
+  version_label: "Model v1: ViT-B/16 trained on SMART-OM (2,469 smartphone images)"
+  input_size: 224
+  pretrained: false
+
+classes:
+  - index: 0
+    name: "T0 Normal"
+    action: "Routine recall"
+    color: "#22c55e"   # green
+    text_color: "#ffffff"
+
+  - index: 1
+    name: "T1 Variation from normal"
+    action: "Short-interval review"
+    color: "#3b82f6"   # blue
+    text_color: "#ffffff"
+
+  - index: 2
+    name: "T2 OPMD (incl. OSMF)"
+    action: "Refer to oral-medicine specialist"
+    color: "#f97316"   # orange
+    text_color: "#ffffff"
+
+  - index: 3
+    name: "T3 Oral cancer"
+    action: "URGENT referral"
+    color: "#ef4444"   # red
+    text_color: "#ffffff"
+
+thresholds:
+  low_confidence: 0.60       # top prob below this → "Low confidence" warning
+  blur_variance: 80.0        # Laplacian variance below this → "blurry" warning
+  dark_mean: 40.0            # mean pixel value below this → "too dark" warning
+  bright_mean: 220.0         # mean pixel value above this → "too bright" warning
+  glare_fraction: 0.10       # glare mask covers >10 % of image → "glare" warning
+
+validation:
+  accuracy: 93.59
+  macro_f1: 71.22
+  balanced_accuracy: 72.01
+  referral_sensitivity: 75.0
+  referral_sensitivity_ci_low: 40.9
+  referral_sensitivity_ci_high: 92.9
+  referral_specificity: 99.1
+  oral_cancer_detected: "4 / 4"
+  opmd_detected: "2 / 4"
+  n_images: 2469
+  dataset: "SMART-OM"

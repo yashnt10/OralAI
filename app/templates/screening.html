@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intraoral Screening & Triage — OralScan AI</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="pulse-dot"></span>
+        <span>OralScan AI</span>
+        <span class="nav-brand-badge">Research prototype</span>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="/screening" class="nav-link active">Screening</a></li>
+          <li><a href="/model-training" class="nav-link">Model & Training</a></li>
+          <li><a href="/about" class="nav-link">About</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-status-badge">
+        <span class="pulse-dot"></span>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h1 class="page-title">Intraoral Pre-Cancer Screening & Triage</h1>
+      <p class="page-subtitle">
+        Upload a smartphone intraoral photograph for automated 4-tier triage and transparent explainability heatmaps.
+      </p>
+    </div>
+
+    <!-- Privacy & Offline Notice -->
+    <div class="alert-box alert-info" style="margin-bottom: 1.5rem;">
+      <div class="alert-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+      <p class="alert-desc">
+        All inference and heatmap generation runs 100% on this local machine. No patient images or data are transmitted to any cloud or external API.
+      </p>
+    </div>
+
+    <!-- ── Section 1: Upload Card ──────────────────────────────────────── -->
+    <section class="section-card" id="upload-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>1. Upload Intraoral Photograph</span>
+        </h2>
+        <span class="section-tag">JPG / PNG only · Max 20 MB</span>
+      </div>
+
+      <div class="upload-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png" style="display: none;">
+        <div class="upload-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="upload-text-main">Drag and drop intraoral photograph here</div>
+        <div class="upload-text-sub">or click to browse from your computer</div>
+      </div>
+
+      <!-- Selected File Preview -->
+      <div class="preview-container" id="preview-box" style="display: none;">
+        <img id="preview-thumb" class="preview-thumb" src="" alt="Thumbnail preview">
+        <div class="preview-details">
+          <div class="preview-name" id="preview-name">—</div>
+          <div class="preview-size" id="preview-size">—</div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="change-file-btn" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">Change Image</button>
+      </div>
+
+      <!-- Anatomical Site Selector & Action Bar -->
+        <div style="display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 280px;">
+          <label for="site-select" style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
+            Anatomical Site <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-dim);">(Recorded for the report only – not used by the model)</span>:
+          </label>
+          <select id="site-select" style="background: var(--bg-surface); color: #fff; border: 1px solid var(--border-color); padding: 0.6rem 0.85rem; border-radius: 0.5rem; font-size: 0.9rem; width: 100%; max-width: 320px;">
+            <option value="Not Specified">Not Specified / General</option>
+            <option value="Buccal Mucosa">Buccal Mucosa (Cheek)</option>
+            <option value="Tongue (Lateral/Ventral)">Tongue (Lateral / Ventral Border)</option>
+            <option value="Tongue (Dorsum)">Tongue (Dorsum)</option>
+            <option value="Floor of Mouth">Floor of Mouth</option>
+            <option value="Gingiva / Alveolar Ridge">Gingiva / Alveolar Ridge</option>
+            <option value="Labial Mucosa / Lip">Labial Mucosa / Lip</option>
+            <option value="Hard / Soft Palate">Hard / Soft Palate</option>
+            <option value="Retromolar Trigone">Retromolar Trigone</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-primary" id="analyze-btn" disabled>
+          <span class="spinner" id="analyze-spinner" style="display: none;"></span>
+          <span id="analyze-btn-text">Analyze Photograph</span>
+        </button>
+      </div>
+
+      <!-- Client-side Error Message -->
+      <div id="upload-error" class="alert-box" style="display: none; margin-top: 1.25rem;">
+        <div class="alert-title" id="upload-error-title">Upload Error</div>
+        <div class="alert-desc" id="upload-error-desc"></div>
+      </div>
+    </section>
+
+    <!-- ── Section 2: Quality Warnings Box (conditional) ───────────────── -->
+    <div id="quality-warnings-card" class="alert-box alert-warning" style="display: none;">
+      <div class="alert-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Image Quality Warnings</span>
+      </div>
+      <div class="alert-desc">
+        <p style="margin-bottom: 0.5rem;">The system detected potential photographic quality issues that may affect screening fidelity:</p>
+        <ul id="quality-warnings-list" style="padding-left: 1.4rem; line-height: 1.6;"></ul>
+      </div>
+    </div>
+
+    <!-- ── Section 3: Prediction Results Card ──────────────────────────── -->
+    <section class="section-card" id="results-card" style="display: none;">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>2. Screening Prediction & Referral Action</span>
+        </h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <span class="section-tag" id="case-id-tag">Case: SCR-XXXX</span>
+          <span class="section-tag" id="site-tag" style="display: none;">Site: —</span>
+          <button type="button" class="btn btn-secondary" id="download-pdf-btn" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.4rem;" title="Download PDF report built in memory">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download report (PDF)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Low Confidence Banner -->
+      <div id="low-confidence-banner" class="alert-box alert-warning" style="display: none; margin-bottom: 1.25rem;">
+        <div class="alert-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Low confidence, needs clinician review</span>
+        </div>
+        <p class="alert-desc" id="low-confidence-text">
+          Top probability is below the 60.0% confidence threshold. Specialist review advised regardless of tier.
+        </p>
+      </div>
+
+      <!-- Main Prediction Result Display -->
+      <div class="two-col-grid" style="align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+            Predicted Triage Classification
+          </div>
+          <div id="tier-badge-display" class="tier-badge tier-badge-t0">
+            <span id="tier-name-display">T0 Normal</span>
+          </div>
+
+          <div id="action-callout" class="action-callout" style="background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: #4ade80;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span id="action-text-display">Routine recall</span>
+          </div>
+        </div>
+
+        <!-- 4-Tier Probability Bars -->
+        <div>
+          <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.6rem;">
+            Class Probability Distribution
+          </div>
+          <div class="prob-bars-container" id="prob-bars-container">
+            <!-- Row T0 -->
+            <div class="prob-row">
+              <span class="prob-name">T0 Normal</span>
+              <div class="prob-track"><div class="prob-fill fill-t0" id="bar-t0" style="width: 0%;"></div></div>
+              <span class="prob-pct" id="pct-t0">0.00%</span>
+            </div>
+            <!-- Row T1 -->
+            <div class="prob-row">
+              <span class="prob-name">T1 Variation from normal</span>
+              <div class="prob-track"><div class="prob-fill fill-t1" id="bar-t1" style="width: 0%;"></div></div>
+              <span class="prob-pct" id="pct-t1">0.00%</span>
+            </div>
+            <!-- Row T2 -->
+            <div class="prob-row">
+              <span class="prob-name">T2 OPMD (incl. OSMF)</span>
+              <div class="prob-track"><div class="prob-fill fill-t2" id="bar-t2" style="width: 0%;"></div></div>
+              <span class="prob-pct" id="pct-t2">0.00%</span>
+            </div>
+            <!-- Row T3 -->
+            <div class="prob-row">
+              <span class="prob-name">T3 Oral cancer</span>
+              <div class="prob-track"><div class="prob-fill fill-t3" id="bar-t3" style="width: 0%;"></div></div>
+              <span class="prob-pct" id="pct-t3">0.00%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Section 4: Explainable AI Heatmaps ───────────────────────────── -->
+    <section class="section-card" id="explanations-card" style="display: none;">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>3. Explainable AI (XAI) Visualizations</span>
+        </h2>
+        <span class="section-tag">Computed On-Device · CPU</span>
+      </div>
+
+      <div class="explanation-grid" id="explanation-grid">
+        <!-- Panel 1: Preprocessed 224x224 Input -->
+        <div class="explanation-card">
+          <div class="explanation-card-header">
+            <span class="explanation-card-title">Preprocessed Input</span>
+            <span class="section-tag">224×224</span>
+          </div>
+          <div class="explanation-card-body">
+            <img id="img-preprocessed" class="explanation-img" src="" alt="Preprocessed input image (224x224)">
+            <div class="explanation-card-desc">
+              Preprocessed input (224×224) after specular glare inpainting, Shades-of-Gray colour correction, and center-crop (what the model sees).
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Grad-CAM -->
+        <div class="explanation-card">
+          <div class="explanation-card-header">
+            <span class="explanation-card-title">Grad-CAM</span>
+            <span class="section-tag" id="gradcam-status">Ready</span>
+          </div>
+          <div class="explanation-card-body">
+            <div id="gradcam-loading" style="padding: 3rem 1rem; text-align: center;">
+              <span class="spinner"></span>
+              <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Computing Grad-CAM...</p>
+            </div>
+            <img id="img-gradcam" class="explanation-img" src="" alt="Grad-CAM heatmap" style="display: none;" title="Click to enlarge">
+            <div class="heatmap-legend" id="legend-gradcam" style="display: none;">
+              <span class="legend-val">0.0 (Low)</span>
+              <div class="legend-bar"></div>
+              <span class="legend-val">1.0 (High)</span>
+            </div>
+            <div class="explanation-card-desc" id="desc-gradcam">
+              Grad-CAM: the target-class gradients are averaged per feature channel to give channel weights; the weighted sum of the final block’s token activations (blocks[-1].norm1, 196 tokens → 14×14) is passed through ReLU, upsampled to 224×224 and scaled to 0–1.
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Attention Rollout -->
+        <div class="explanation-card">
+          <div class="explanation-card-header">
+            <span class="explanation-card-title">Attention Rollout</span>
+            <span class="section-tag" id="rollout-status">Ready</span>
+          </div>
+          <div class="explanation-card-body">
+            <div id="rollout-loading" style="padding: 3rem 1rem; text-align: center;">
+              <span class="spinner"></span>
+              <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Computing Attention Rollout...</p>
+            </div>
+            <img id="img-rollout" class="explanation-img" src="" alt="Attention Rollout heatmap" style="display: none;" title="Click to enlarge">
+            <div class="heatmap-legend" id="legend-rollout" style="display: none;">
+              <span class="legend-val">0.0 (Low)</span>
+              <div class="legend-bar"></div>
+              <span class="legend-val">1.0 (High)</span>
+            </div>
+            <div class="explanation-card-desc" id="desc-rollout">
+              Recursive matrix product of attention weights across all 12 transformer layers with residual skip connections (0.5·A + 0.5·I), representing the CLS-token attention distribution.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LIME On-Demand Box ─────────────────────────────────────────── -->
+      <div class="lime-box" id="lime-control-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Extended Superpixel Explanation (LIME)</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Fits an interpretable local surrogate model on 300 perturbed superpixel masks. Excludes black padding.
+            </p>
+          </div>
+          <button type="button" class="btn btn-lime" id="run-lime-btn">
+            Run LIME (takes about 3 minutes)
+          </button>
+        </div>
+
+        <!-- LIME In-Progress Panel -->
+        <div id="lime-progress-box" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.88rem;">
+            <span style="color: #facc15; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="spinner" style="border-top-color: #facc15;"></span>
+              Running LIME superpixel perturbations on CPU (300 samples)...
+            </span>
+            <span id="lime-elapsed-timer" style="font-family: var(--font-mono); color: #fff; font-weight: 700;">Elapsed: 0s</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar-animated"></div>
+          </div>
+          <div style="margin-top: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--text-dim); font-style: italic;">
+              The rest of the page remains fully usable while LIME runs.
+            </span>
+            <button type="button" class="btn btn-danger-outline" id="cancel-lime-btn" style="padding: 0.45rem 0.85rem; font-size: 0.82rem;">
+              Cancel LIME
+            </button>
+          </div>
+        </div>
+
+        <!-- LIME Result Card (inserted once computed) -->
+        <div id="lime-result-card" class="explanation-card" style="display: none; margin-top: 1rem; border-color: rgba(202, 138, 4, 0.4);">
+          <div class="explanation-card-header" style="background: rgba(202, 138, 4, 0.15);">
+            <span class="explanation-card-title" style="color: #facc15;">LIME (Top 5 Positive Superpixel Outlines)</span>
+            <span class="section-tag" style="background: rgba(202, 138, 4, 0.2); color: #fef08a;">Completed</span>
+          </div>
+          <div class="explanation-card-body">
+            <img id="img-lime" class="explanation-img" src="" alt="LIME top 5 superpixels outline" title="Click to enlarge">
+            <div class="lime-legend" id="legend-lime">
+              <span class="lime-legend-swatch"></span>
+              <span class="legend-val">Gold outline: Top 5 positive superpixels influencing predicted class</span>
+            </div>
+            <div class="explanation-card-desc" id="desc-lime">
+              Top 5 positive superpixels (gold outlines) influencing the prediction, fitted with a local linear surrogate model on 300 perturbed samples with black padding excluded (fixed random seed).
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><strong>Highlighted regions influenced this prediction according to each method. Not proof of disease. Screening aid only.</strong></p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem;">
+      OralScan AI — Explainable AI for Oral Pre-Cancer and Cancer Screening Triage. Screening aid prototype for educational & research purposes. Not a medical diagnostic device.
+    </p>
+  </footer>
+
+  <!-- Modal Lightbox for enlarged heatmap / image view -->
+  <div id="image-modal" class="image-modal" style="display: none;">
+    <div class="image-modal-backdrop" id="modal-backdrop"></div>
+    <div class="image-modal-content">
+      <div class="image-modal-header">
+        <h3 id="modal-title" class="image-modal-title">Heatmap View</h3>
+        <button type="button" class="image-modal-close" id="modal-close" aria-label="Close enlarged view">&times;</button>
+      </div>
+      <div class="image-modal-body">
+        <img id="modal-img" src="" alt="Enlarged heatmap view" class="image-modal-img">
+        <div id="modal-legend-container" style="width: 100%;"></div>
+        <p id="modal-desc" class="image-modal-desc"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vanilla JavaScript — 100% Offline, Zero CDNs -->
+  <script>
+    (function() {
+      // ── Elements ─────────────────────────────────────────────────────────────
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const previewBox = document.getElementById("preview-box");
+      const previewThumb = document.getElementById("preview-thumb");
+      const previewName = document.getElementById("preview-name");
+      const previewSize = document.getElementById("preview-size");
+      const changeFileBtn = document.getElementById("change-file-btn");
+      const siteSelect = document.getElementById("site-select");
+      const analyzeBtn = document.getElementById("analyze-btn");
+      const analyzeSpinner = document.getElementById("analyze-spinner");
+      const analyzeBtnText = document.getElementById("analyze-btn-text");
+      const uploadError = document.getElementById("upload-error");
+      const uploadErrorDesc = document.getElementById("upload-error-desc");
+
+      const qualityCard = document.getElementById("quality-warnings-card");
+      const qualityList = document.getElementById("quality-warnings-list");
+
+      const resultsCard = document.getElementById("results-card");
+      const caseIdTag = document.getElementById("case-id-tag");
+      const siteTag = document.getElementById("site-tag");
+      const tierBadge = document.getElementById("tier-badge-display");
+      const tierName = document.getElementById("tier-name-display");
+      const actionCallout = document.getElementById("action-callout");
+      const actionText = document.getElementById("action-text-display");
+      const lowConfBanner = document.getElementById("low-confidence-banner");
+
+      const explanationsCard = document.getElementById("explanations-card");
+      const imgPreprocessed = document.getElementById("img-preprocessed");
+      const imgGradcam = document.getElementById("img-gradcam");
+      const gradcamLoading = document.getElementById("gradcam-loading");
+      const imgRollout = document.getElementById("img-rollout");
+      const rolloutLoading = document.getElementById("rollout-loading");
+
+      const runLimeBtn = document.getElementById("run-lime-btn");
+      const limeProgressBox = document.getElementById("lime-progress-box");
+      const limeElapsedTimer = document.getElementById("lime-elapsed-timer");
+      const cancelLimeBtn = document.getElementById("cancel-lime-btn");
+      const limeResultCard = document.getElementById("lime-result-card");
+      const imgLime = document.getElementById("img-lime");
+
+      let currentFile = null;
+      let currentCaseId = null;
+      let limeAbortController = null;
+      let limeTimerInterval = null;
+
+      // ── File Selection & Drag-Drop ───────────────────────────────────────────
+      dropZone.addEventListener("click", () => fileInput.click());
+      changeFileBtn.addEventListener("click", () => fileInput.click());
+
+      ["dragenter", "dragover"].forEach(evt => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(evt => {
+        dropZone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove("dragover");
+        });
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFile(e.target.files[0]);
+        }
+      });
+
+      function handleFile(file) {
+        uploadError.style.display = "none";
+        // Enforce JPG/PNG only
+        const validTypes = ["image/jpeg", "image/png"];
+        const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+        if (!validTypes.includes(file.type) && !['.jpg', '.jpeg', '.png'].includes(ext)) {
+          showError("Invalid File Format", "Please select a JPG or PNG intraoral photograph.");
+          return;
+        }
+
+        // Limit: 20 MB
+        const maxSize = 20 * 1024 * 1024;
+        if (file.size > maxSize) {
+          showError("File Too Large", `Selected file (${(file.size / 1e6).toFixed(1)} MB) exceeds the 20 MB size limit.`);
+          return;
+        }
+
+        currentFile = file;
+        previewName.textContent = file.name;
+        previewSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewThumb.src = e.target.result;
+          previewBox.style.display = "flex";
+          dropZone.style.display = "none";
+          analyzeBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function showError(title, desc) {
+        document.getElementById("upload-error-title").textContent = title;
+        uploadErrorDesc.textContent = desc;
+        uploadError.style.display = "block";
+      }
+
+      // ── Confidence formatting helper ─────────────────────────────────────────
+      function formatPct(val) {
+        const pct = val * 100.0;
+        if (pct > 99.99) {
+          return "> 99.99 %";
+        }
+        if (pct < 0.01) {
+          return "< 0.01 %";
+        }
+        return pct.toFixed(2) + " %";
+      }
+
+      // ── Analyze Action ───────────────────────────────────────────────────────
+      analyzeBtn.addEventListener("click", async () => {
+        if (!currentFile) return;
+
+        // Reset UI state
+        analyzeBtn.disabled = true;
+        analyzeSpinner.style.display = "inline-block";
+        analyzeBtnText.textContent = "Analyzing...";
+        uploadError.style.display = "none";
+        qualityCard.style.display = "none";
+        qualityList.innerHTML = "";
+        resultsCard.style.display = "none";
+        explanationsCard.style.display = "none";
+        limeResultCard.style.display = "none";
+        const legendGc = document.getElementById("legend-gradcam");
+        const legendRo = document.getElementById("legend-rollout");
+        if (legendGc) legendGc.style.display = "none";
+        if (legendRo) legendRo.style.display = "none";
+        if (limeAbortController) {
+          limeAbortController.abort();
+        }
+
+        const formData = new FormData();
+        formData.append("file", currentFile);
+        const selectedSite = siteSelect.value;
+        if (selectedSite && selectedSite !== "Not Specified") {
+          formData.append("site", selectedSite);
+        }
+
+        try {
+          const res = await fetch("/api/predict", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({ detail: "Analysis failed." }));
+            throw new Error(errData.detail || "Server error occurred during prediction.");
+          }
+
+          const data = await res.json();
+          currentCaseId = data.case_id;
+
+          // Render prediction result card
+          renderPrediction(data);
+
+          // Render Explanations
+          renderExplanations(data);
+
+        } catch (err) {
+          showError("Prediction Error", err.message || "Failed to process image.");
+        } finally {
+          analyzeBtn.disabled = false;
+          analyzeSpinner.style.display = "none";
+          analyzeBtnText.textContent = "Analyze Photograph";
+        }
+      });
+
+      // ── Render Prediction ────────────────────────────────────────────────────
+      function renderPrediction(data) {
+        caseIdTag.textContent = `Case: ${data.case_id}`;
+        if (data.site) {
+          siteTag.textContent = `Site: ${data.site}`;
+          siteTag.style.display = "inline-block";
+        } else {
+          siteTag.style.display = "none";
+        }
+
+        // Quality warnings
+        if (data.quality_warnings && data.quality_warnings.length > 0) {
+          qualityList.innerHTML = "";
+          data.quality_warnings.forEach(w => {
+            const li = document.createElement("li");
+            li.textContent = w;
+            qualityList.appendChild(li);
+          });
+          qualityCard.style.display = "block";
+        } else {
+          qualityCard.style.display = "none";
+        }
+
+        // Tier badge colors: T0 green, T1 blue, T2 orange, T3 red
+        tierName.textContent = data.tier_name;
+        tierBadge.className = "tier-badge";
+        actionCallout.className = "action-callout";
+
+        if (data.tier_index === 0) {
+          tierBadge.classList.add("tier-badge-t0");
+          actionCallout.style.background = "rgba(34, 197, 94, 0.12)";
+          actionCallout.style.borderColor = "rgba(34, 197, 94, 0.3)";
+          actionCallout.style.color = "#4ade80";
+        } else if (data.tier_index === 1) {
+          tierBadge.classList.add("tier-badge-t1");
+          actionCallout.style.background = "rgba(59, 130, 246, 0.12)";
+          actionCallout.style.borderColor = "rgba(59, 130, 246, 0.3)";
+          actionCallout.style.color = "#60a5fa";
+        } else if (data.tier_index === 2) {
+          tierBadge.classList.add("tier-badge-t2");
+          actionCallout.style.background = "rgba(249, 115, 22, 0.12)";
+          actionCallout.style.borderColor = "rgba(249, 115, 22, 0.3)";
+          actionCallout.style.color = "#fb923c";
+        } else if (data.tier_index === 3) {
+          tierBadge.classList.add("tier-badge-t3");
+          actionCallout.style.background = "rgba(239, 68, 68, 0.12)";
+          actionCallout.style.borderColor = "rgba(239, 68, 68, 0.3)";
+          actionCallout.style.color = "#f87171";
+        }
+
+        actionText.textContent = data.action;
+
+        // Low confidence banner: when top prob < 0.60
+        const topProb = Math.max(...data.probabilities.map(p => p.probability));
+        if (topProb < 0.60 || data.confidence_warning) {
+          document.getElementById("low-confidence-text").textContent =
+            `Top probability is ${formatPct(topProb)} (below the 60.0% threshold). Specialist review advised regardless of tier.`;
+          lowConfBanner.style.display = "block";
+        } else {
+          lowConfBanner.style.display = "none";
+        }
+
+        // Probability Bars
+        data.probabilities.forEach((p, idx) => {
+          const barEl = document.getElementById(`bar-t${idx}`);
+          const pctEl = document.getElementById(`pct-t${idx}`);
+          if (barEl && pctEl) {
+            const pctStr = formatPct(p.probability);
+            pctEl.textContent = pctStr;
+            const barWidth = Math.max(p.probability * 100.0, 0.5);
+            barEl.style.width = `${barWidth}%`;
+          }
+        });
+
+        resultsCard.style.display = "block";
+        resultsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // ── Render Explanations ──────────────────────────────────────────────────
+      async function renderExplanations(data) {
+        explanationsCard.style.display = "block";
+
+        // 1. Preprocessed 224x224 input image
+        if (data.image_224_b64) {
+          imgPreprocessed.src = data.image_224_b64;
+        } else if (data.cleaned_image_b64) {
+          imgPreprocessed.src = data.cleaned_image_b64;
+        }
+
+        // 2. Fetch Grad-CAM automatically
+        gradcamLoading.style.display = "block";
+        imgGradcam.style.display = "none";
+        fetchExplain(data.case_id, "gradcam", imgGradcam, gradcamLoading, "gradcam-status");
+
+        // 3. Fetch Attention Rollout automatically
+        rolloutLoading.style.display = "block";
+        imgRollout.style.display = "none";
+        fetchExplain(data.case_id, "attention_rollout", imgRollout, rolloutLoading, "rollout-status");
+      }
+
+      async function fetchExplain(caseId, method, imgEl, loadingEl, statusId) {
+        try {
+          const res = await fetch("/api/explain", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ case_id: caseId, method: method }),
+          });
+
+          if (!res.ok) throw new Error("Heatmap generation failed.");
+          const data = await res.json();
+          imgEl.src = data.heatmap_b64;
+          imgEl.style.display = "block";
+          loadingEl.style.display = "none";
+          document.getElementById(statusId).textContent = "Completed";
+          if (method === "gradcam") {
+            const lg = document.getElementById("legend-gradcam");
+            if (lg) lg.style.display = "flex";
+          } else if (method === "attention_rollout") {
+            const lr = document.getElementById("legend-rollout");
+            if (lr) lr.style.display = "flex";
+          }
+        } catch (e) {
+          loadingEl.innerHTML = `<span style="color: #f87171; font-size: 0.85rem;">Failed to load heatmap.</span>`;
+        }
+      }
+
+      // ── LIME On-Demand Async Execution ───────────────────────────────────────
+      runLimeBtn.addEventListener("click", async () => {
+        if (!currentCaseId) return;
+
+        // UI progress state
+        runLimeBtn.style.display = "none";
+        limeProgressBox.style.display = "block";
+        limeResultCard.style.display = "none";
+
+        let elapsedSeconds = 0;
+        limeElapsedTimer.textContent = "Elapsed: 0s";
+        limeTimerInterval = setInterval(() => {
+          elapsedSeconds += 1;
+          limeElapsedTimer.textContent = `Elapsed: ${elapsedSeconds}s`;
+        }, 1000);
+
+        limeAbortController = new AbortController();
+
+        try {
+          const res = await fetch("/api/explain/lime", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ case_id: currentCaseId, method: "lime" }),
+            signal: limeAbortController.signal,
+          });
+
+          if (!res.ok) {
+            throw new Error("LIME computation failed on server.");
+          }
+
+          const data = await res.json();
+          imgLime.src = data.heatmap_b64;
+          limeResultCard.style.display = "block";
+          limeProgressBox.style.display = "none";
+          runLimeBtn.style.display = "inline-flex";
+          runLimeBtn.textContent = "Re-run LIME";
+
+          limeResultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (err) {
+          if (err.name === "AbortError") {
+            console.log("LIME computation canceled by user.");
+          } else {
+            alert(`LIME execution error: ${err.message}`);
+          }
+          limeProgressBox.style.display = "none";
+          runLimeBtn.style.display = "inline-flex";
+        } finally {
+          clearInterval(limeTimerInterval);
+        }
+      });
+
+      cancelLimeBtn.addEventListener("click", () => {
+        if (limeAbortController) {
+          limeAbortController.abort();
+          limeAbortController = null;
+        }
+        clearInterval(limeTimerInterval);
+        limeProgressBox.style.display = "none";
+        runLimeBtn.style.display = "inline-flex";
+      });
+
+      // ── Modal Lightbox Handlers ──────────────────────────────────────────────
+      const imageModal = document.getElementById("image-modal");
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const modalClose = document.getElementById("modal-close");
+      const modalTitle = document.getElementById("modal-title");
+      const modalImg = document.getElementById("modal-img");
+      const modalDesc = document.getElementById("modal-desc");
+      const modalLegendContainer = document.getElementById("modal-legend-container");
+
+      function openModal(title, imgSrc, desc, legendHtml) {
+        if (!imgSrc) return;
+        modalTitle.textContent = title;
+        modalImg.src = imgSrc;
+        modalDesc.textContent = desc || "";
+        modalLegendContainer.innerHTML = legendHtml || "";
+        imageModal.style.display = "flex";
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeModal() {
+        imageModal.style.display = "none";
+        document.body.style.overflow = "";
+      }
+
+      modalClose.addEventListener("click", closeModal);
+      modalBackdrop.addEventListener("click", closeModal);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && imageModal.style.display === "flex") {
+          closeModal();
+        }
+      });
+
+      const jetLegendMarkup = `
+        <div class="heatmap-legend">
+          <span class="legend-val">0.0 (Low)</span>
+          <div class="legend-bar"></div>
+          <span class="legend-val">1.0 (High)</span>
+        </div>
+      `;
+
+      const limeLegendMarkup = `
+        <div class="lime-legend">
+          <span class="lime-legend-swatch"></span>
+          <span class="legend-val">Gold outline: Top 5 positive superpixels influencing predicted class</span>
+        </div>
+      `;
+
+      imgPreprocessed.addEventListener("click", () => {
+        if (imgPreprocessed.src) {
+          openModal(
+            "Preprocessed Input (224×224)",
+            imgPreprocessed.src,
+            "Preprocessed input (224×224) after specular glare inpainting, Shades-of-Gray colour correction, and center-crop (what the model sees)."
+          );
+        }
+      });
+
+      imgGradcam.addEventListener("click", () => {
+        if (imgGradcam.src && imgGradcam.style.display !== "none") {
+          const desc = document.getElementById("desc-gradcam").textContent.trim();
+          openModal("Grad-CAM Heatmap", imgGradcam.src, desc, jetLegendMarkup);
+        }
+      });
+
+      imgRollout.addEventListener("click", () => {
+        if (imgRollout.src && imgRollout.style.display !== "none") {
+          const desc = document.getElementById("desc-rollout").textContent.trim();
+          openModal("Attention Rollout Heatmap", imgRollout.src, desc, jetLegendMarkup);
+        }
+      });
+
+      imgLime.addEventListener("click", () => {
+        if (imgLime.src) {
+          const desc = document.getElementById("desc-lime").textContent.trim();
+          openModal("LIME Superpixel Outline", imgLime.src, desc, limeLegendMarkup);
+        }
+      });
+
+      // ── PDF Download Handler ─────────────────────────────────────────────────
+      const downloadPdfBtn = document.getElementById("download-pdf-btn");
+      if (downloadPdfBtn) {
+        downloadPdfBtn.addEventListener("click", () => {
+          if (!currentCaseId) return;
+          window.location.href = `/api/report/${currentCaseId}/pdf`;
+        });
+      }
+
+    })();
+  </script>
+
+</body>
+</html>

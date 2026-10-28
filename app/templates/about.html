@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — OralScan AI</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="pulse-dot"></span>
+        <span>OralScan AI</span>
+        <span class="nav-brand-badge">Research prototype</span>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="/screening" class="nav-link">Screening</a></li>
+          <li><a href="/model-training" class="nav-link">Model & Training</a></li>
+          <li><a href="/about" class="nav-link active">About</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-status-badge">
+        <span class="pulse-dot"></span>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h1 class="page-title">About OralScan AI</h1>
+      <p class="page-subtitle">
+        Explainable Artificial Intelligence for early oral pre-cancer and cancer triage screening.
+      </p>
+    </div>
+
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Project Mission & Clinical Context</span>
+        </h2>
+        <span class="section-tag">AI in Healthcare</span>
+      </div>
+
+      <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 1rem;">
+        Oral squamous cell carcinoma (OSCC) is frequently preceded by clinically identifiable Oral Potentially Malignant Disorders (OPMD),
+        including oral submucous fibrosis (OSMF) and leukoplakia. In resource-limited settings, late diagnosis dramatically reduces 5-year survival rates.
+        OralScan AI provides rapid, on-device risk stratification of smartphone intraoral photographs into 4 actionable triage tiers.
+      </p>
+
+      <div class="two-col-grid" style="margin-top: 1.5rem;">
+        <div class="detail-item">
+          <div class="detail-key">Triage Framework</div>
+          <div class="detail-val">
+            <ul style="padding-left: 1.25rem; font-size: 0.9rem; margin-top: 0.35rem; line-height: 1.6;">
+              <li><strong style="color: var(--t0-color);">T0 Normal:</strong> Routine recall</li>
+              <li><strong style="color: var(--t1-color);">T1 Variation from normal:</strong> Short-interval review</li>
+              <li><strong style="color: var(--t2-color);">T2 OPMD (incl. OSMF):</strong> Refer to oral-medicine specialist</li>
+              <li><strong style="color: var(--t3-color);">T3 Oral cancer:</strong> URGENT referral</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="detail-item">
+          <div class="detail-key">Explainable AI (XAI) Suite</div>
+          <div class="detail-val">
+            <ul style="padding-left: 1.25rem; font-size: 0.9rem; margin-top: 0.35rem; line-height: 1.6;">
+              <li><strong>Grad-CAM:</strong> Gradient-weighted activations at the final LayerNorm.</li>
+              <li><strong>Attention Rollout:</strong> 12-layer multi-head self-attention product with raw border fidelity.</li>
+              <li><strong>LIME:</strong> Top 5 positive superpixel outlines with black padding excluded.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Privacy & Local Processing</span>
+        </h2>
+        <span class="section-tag">Zero Cloud Dependency</span>
+      </div>
+
+      <p style="color: var(--text-muted); line-height: 1.7;">
+        All model inference, specular highlight inpainting, Shades-of-Gray colour constancy, and explainability algorithms
+        execute locally on CPU. No patient images are saved to disk, and no third-party APIs (OpenAI, Gemini, Hugging Face) are called.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><strong>Highlighted regions influenced this prediction according to each method. Not proof of disease. Screening aid only.</strong></p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem;">
+      OralScan AI — Explainable AI for Oral Pre-Cancer and Cancer Screening Triage. Screening aid prototype for educational & research purposes. Not a medical diagnostic device.
+    </p>
+  </footer>
+
+</body>
+</html>

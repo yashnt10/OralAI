@@ -1,0 +1,42 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Model weights (faculty rule: never put weights in git)
+models/*.pth
+models/*.pt
+
+# Test images and outputs (privacy rule: patient/test data excluded from git)
+test_images/
+test_outputs/
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.bmp
+
+# Training notebook (contains patient intraoral photos; local submission only)
+training/training_notebook.ipynb
+
+# Python cache & compiled bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest & test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Archives & datasets
+*.zip
+*.tar.gz
+*.rar
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

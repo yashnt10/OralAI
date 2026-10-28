@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OralScan AI — Intraoral Screening & Triage</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="pulse-dot"></span>
+        <span>OralScan AI</span>
+        <span class="nav-brand-badge">Research prototype</span>
+      </a>
+
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="/screening" class="nav-link">Screening</a></li>
+          <li><a href="/model-training" class="nav-link">Model & Training</a></li>
+          <li><a href="/about" class="nav-link">About</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-status-badge">
+        <span class="pulse-dot"></span>
+        <span>Runs locally · no external AI APIs</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header" style="text-align: center; margin: 3rem auto 2.5rem; max-width: 800px;">
+      <h1 class="page-title" style="font-size: 2.6rem;">Oral Pre-Cancer Screening & Triage</h1>
+      <p class="page-subtitle" style="margin: 0 auto 1.5rem; font-size: 1.15rem;">
+        An explainable AI screening tool designed for rapid intraoral risk assessment,
+        specular glare reduction, and transparent visual evidence.
+      </p>
+
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/screening" class="btn btn-primary" style="padding: 0.85rem 1.8rem; font-size: 1.05rem;">
+          Start Screening Triage &rarr;
+        </a>
+        <a href="/model-training" class="btn btn-secondary" style="padding: 0.85rem 1.6rem; font-size: 1.05rem;">
+          View Model Performance
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Feature Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card accent-green">
+        <span class="kpi-label">4-Tier Clinical Triage</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">T0 · T1 · T2 · T3</span>
+        <span class="kpi-subtext">Actionable referral routing from routine recall to urgent oncology referral</span>
+      </div>
+
+      <div class="kpi-card accent-cyan">
+        <span class="kpi-label">Triple Explainable AI</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">Grad-CAM · Rollout · LIME</span>
+        <span class="kpi-subtext">Multi-perspective visual evidence without black-box opacity</span>
+      </div>
+
+      <div class="kpi-card accent-yellow">
+        <span class="kpi-label">Clinical Preprocessing</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">Glare &amp; Constancy</span>
+        <span class="kpi-subtext">Telea inpainting and Shades-of-Gray (p=6) colour correction</span>
+      </div>
+
+      <div class="kpi-card accent-orange">
+        <span class="kpi-label">Privacy First</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">100% On-Device</span>
+        <span class="kpi-subtext">Zero cloud transmission, zero patient data saved to disk</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p><strong>Highlighted regions influenced this prediction according to each method. Not proof of disease. Screening aid only.</strong></p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem;">
+      OralScan AI — Explainable AI for Oral Pre-Cancer and Cancer Screening Triage. Screening aid prototype for educational & research purposes. Not a medical diagnostic device.
+    </p>
+  </footer>
+
+</body>
+</html>
